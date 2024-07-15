@@ -83,6 +83,10 @@ server <- function(input, output) {
       }
     }
     
+    # Define the broad genres
+    broad_genres = c("pop", "rock", "hip hop", "rap", "country", "r&b", "latin", "edm", "metal", "jazz", "classical", "reggae", "blues", "folk", "indie", 
+                     "punk", "soul", "funk", "disco", "electronic", "house", "techno",
+                     "bossa nova", "bolero", "band", "dance", "ska")
     broadGenre <- sapply(data$the.genre.of.the.track, find_closest_genre, genre_list = broad_genres)
     
     output$plot <- renderPlot({
