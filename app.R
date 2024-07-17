@@ -10,13 +10,16 @@
 library(shiny)
 library(ggplot2)
 library(dplyr)
+library(plotly)
 
 # read the data
 data <- read.csv("top50MusicFrom2010-2019.csv")
 choices_list_cols <- setNames(names(data)[5:ncol(data)], names(data)[5:ncol(data)])
-# as it was done above, get a choices list but now not for the columns in the data but for the different type of genres in the column the.genre.of.the.track
+
+# get a choices list but now not for the columns in the data but for the different type of genres in the column the.genre.of.the.track
 # get the unique values of the genre column
 # genre_list <- unique(data$the.genre.of.the.track)
+
 # # sort the genre list
 # genre_list <- sort(genre_list)
 # # create a named list of the genre list
@@ -35,10 +38,13 @@ find_closest_genre <- function(genre, genre_list) {
   }
 }
 
-broad_genres = c("pop", "rock", "hop", "country", "dance", "latin", "indie", 
+broad_genres = c("hip","barbadian","columbian","australian","acoustic","rock", "hop", "country", "dance", "latin", "indie", 
                  "metal", "jazz", "classical", "soul", "folk", "rap", "r&b", "house")
 broadGenre <- sapply(data$the.genre.of.the.track, find_closest_genre, genre_list = broad_genres)
-genre_list <- sort(data$broadGenre)
+data$broadGenre <- as.factor(broadGenre)
+View(data)
+#browser()
+genre_list <- sort(unique(data$broadGenre))
 choices_list_genre <- setNames(genre_list, genre_list)
 
 # Define UI for application that draws a histogram
@@ -53,7 +59,7 @@ ui <- fluidPage(
           selectInput("selection", "Choose an Option:",
             choices = choices_list_cols),
           # add a checklist box for the genre
-          checkboxGroupInput("genre", "Choose a genre:",
+          checkboxGroupInput("checkbox_genre", "Choose a genre:",
             choices = choices_list_genre)
         ),
 
@@ -61,6 +67,7 @@ ui <- fluidPage(
         mainPanel(
           plotOutput("plot_sum"),
           plotOutput("plot"),
+          plotlyOutput("plotly"),
           # show the table of the data
           tableOutput("table")
         )
@@ -76,7 +83,7 @@ server <- function(input, output) {
   
     # plot the sum of the data
     output$plot_sum <- renderPlot({
-      sum_data <- data.frame(JAHR_START = data$year, SUM = data[[input$selection]])  ##HERE!!! for test only
+      sum_data <- data.frame(JAHR_START = data$year, SUM = data[[input$selection]])
 
       aggregated_data <- sum_data %>%
       group_by(JAHR_START) %>%
@@ -96,9 +103,26 @@ server <- function(input, output) {
       # plot x,y for two columns of the data
      
       x <- data$year
-      y <- data[[input$selection]]
+      
+      #filter data base on the genre using checkbox selection checkbox_genre
+      if (length(input$checkbox_genre) > 0) {
+        data_genreSelection <- data[data$broadGenre %in% input$checkbox_genre,]
+      }
+      
+      y <- data_genreSelection[[input$selection]]
       
       plot(x, y)
+    })
+    
+    output$plotly <- renderPlotly({
+      # plot x,y for two columns of the data
+      x <- data$year
+      y <- data[[input$selection]]
+      
+      plot_ly(data, x=~x, y=~y, type='scatter', mode ='lines+markers') %>%
+        layout(title="Summe von..",
+               xaxis = list(title ="Jahr"),
+               yaxis = list(title="Summe"))
     })
 }
 
